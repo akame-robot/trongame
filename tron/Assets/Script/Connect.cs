@@ -66,4 +66,9 @@ public class Connect : MonoBehaviourPunCallbacks
         Debug.Log($"room nanme: {PhotonNetwork.CurrentRoom.Name}");
         Debug.Log($"numero de player: {PhotonNetwork.CurrentRoom.PlayerCount}");
     }
+
+    public override void OnDisconnected(DisconnectCause cause)
+    {
+        Debug.Log("disconnected");
+    }
 }
