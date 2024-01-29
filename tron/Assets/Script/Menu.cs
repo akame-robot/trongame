@@ -15,20 +15,20 @@ public class Menu : MonoBehaviourPunCallbacks
 
     void Start()
     {
-        string randomName = "player" + Random.Range(0,1000);
+        string randomName = "player" + Random.Range(0, 1000);
         playerName.text = randomName;
     }
 
     public void Playgame()
     {
-        if(playerName != null)
+        if (playerName != null)
         {
             canvas.SetActive(false);
             canvas2.SetActive(true);
 
             Login();
         }
-        
+
     }
     public void Login()
     {
@@ -50,19 +50,28 @@ public class Menu : MonoBehaviourPunCallbacks
 
     public override void OnConnectedToMaster() // depois ele entr aaqui na terceira fase e aqui ele busca um apartida o botao vai connetebutommatch tentra fazer entrar no lobby
     {
-        Debug.Log("master connected");
-        ConnectButtomMatch();
-    }
-
-
-    public void ButtomCreateRoom()
-    {
-        string roomName = "room" + Random.Range(0,10);
+        Debug.Log("master entrou");
+        string roomName = "room" + Random.Range(0, 10);
         roomLobbyName.text = roomName;
         RoomOptions roomOption = new RoomOptions()
         {
             MaxPlayers = 4
         };
-        PhotonNetwork.JoinOrCreateRoom(roomName, roomOption, TypedLobby.Default);
+        PhotonNetwork.CreateRoom(roomName, roomOption, TypedLobby.Default);
+        Debug.Log(roomName);
+        ConnectButtomMatch();
+    }
+    public override void OnJoinedRoom()//e aqui vai entrar na sala criado no onjoinedramdomfailed 
+    {
+        Debug.Log("joined de room");
+        Debug.Log($"room nanme: {PhotonNetwork.CurrentRoom.Name}");
+        Debug.Log($"numero de player: {PhotonNetwork.CurrentRoom.PlayerCount}");
+    }
+
+    public void JoinLObbyButtom()
+    {
+        string lobbyName = roomLobbyName.text;
+        PhotonNetwork.JoinLobby(new TypedLobby(lobbyName, LobbyType.Default));
     }
 }
+    
