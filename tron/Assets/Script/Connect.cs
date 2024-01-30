@@ -31,7 +31,6 @@ public class Connect : MonoBehaviourPunCallbacks
     {
         PhotonNetwork.JoinLobby();
     }
-    // Update is called once per frame
     
     public override void OnConnected() //ele entra aqui na segunda faze
     {

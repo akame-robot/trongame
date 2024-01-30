@@ -7,16 +7,20 @@ using UnityEngine;
 using UnityEngine.UI;
 using Photon.Pun;
 using Photon.Realtime;
+using TMPro;
 
 public class Menu : MonoBehaviourPunCallbacks
 {
     public GameObject canvas, canvas2;
-    public InputField playerName, roomLobbyName;
+    public InputField playerName, roomLobbyName, enterLobby;
+
+    public TextMeshProUGUI palyerCount;
+
+    //PhotonView photon e utilizado para saber que objeto e do meu pc usando photon.ismine  photonetcwork.localplayer.actornumber int number = photonetcwork.localplayer.actornumber
 
     void Start()
     {
         string randomName = "player" + Random.Range(0, 1000);
-        playerName.text = randomName;
     }
 
     public void Playgame()
@@ -28,7 +32,7 @@ public class Menu : MonoBehaviourPunCallbacks
 
             Login();
         }
-
+        
     }
     public void Login()
     {
@@ -43,24 +47,27 @@ public class Menu : MonoBehaviourPunCallbacks
         Debug.Log("connected");
         Debug.Log($"servidor:{PhotonNetwork.CloudRegion} ping {PhotonNetwork.GetPing()}");
     }
+    public override void OnConnectedToMaster() // depois ele entr aaqui na terceira fase e aqui ele busca um apartida o botao vai connetebutommatch tentra fazer entrar no lobby
+    {
+        Debug.Log("master entrou");
+        ConnectButtomMatch();
+    }
+
     public void ConnectButtomMatch() //vem aqui e e tenta conectar no lobby
     {
         PhotonNetwork.JoinLobby();
     }
-
-    public override void OnConnectedToMaster() // depois ele entr aaqui na terceira fase e aqui ele busca um apartida o botao vai connetebutommatch tentra fazer entrar no lobby
+    public void CreateRoom()
     {
-        Debug.Log("master entrou");
-        string roomName = "room" + Random.Range(0, 10);
-        roomLobbyName.text = roomName;
-        RoomOptions roomOption = new RoomOptions()
+        string lobbyName = enterLobby.text;
+        RoomOptions roomOption = new RoomOptions
         {
             MaxPlayers = 4
         };
-        PhotonNetwork.CreateRoom(roomName, roomOption, TypedLobby.Default);
-        Debug.Log(roomName);
-        ConnectButtomMatch();
+        PhotonNetwork.JoinOrCreateRoom(lobbyName, roomOption, TypedLobby.Default);
     }
+
+
     public override void OnJoinedRoom()//e aqui vai entrar na sala criado no onjoinedramdomfailed 
     {
         Debug.Log("joined de room");
@@ -68,10 +75,10 @@ public class Menu : MonoBehaviourPunCallbacks
         Debug.Log($"numero de player: {PhotonNetwork.CurrentRoom.PlayerCount}");
     }
 
-    public void JoinLObbyButtom()
+    public override void OnJoinedLobby()//quando cria uma sala aparece esse debug log aqui
     {
-        string lobbyName = roomLobbyName.text;
-        PhotonNetwork.JoinLobby(new TypedLobby(lobbyName, LobbyType.Default));
+        PhotonNetwork.JoinRandomRoom();
     }
+
 }
-    
+
