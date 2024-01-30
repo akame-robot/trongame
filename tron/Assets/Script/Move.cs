@@ -1,7 +1,9 @@
 ﻿using UnityEngine;
 using Photon.Pun;
+using Photon.Realtime;
+using System;
 
-public class Move : MonoBehaviourPun
+public class Move : MonoBehaviourPunCallbacks, IPunObservable
 {
     // Movement keys (customizable in inspector)
     public KeyCode upKey;
@@ -21,6 +23,10 @@ public class Move : MonoBehaviourPun
     // Last Wall's End
     Vector2 lastWallEnd;
 
+    private GameObject localWall;
+    private GameObject createdWall;
+
+
     // Use this for initialization
     void Start()
     {
@@ -28,7 +34,8 @@ public class Move : MonoBehaviourPun
         GetComponent<Rigidbody2D>().velocity = Vector2.up * speed;
         if (photonView.IsMine)
         {
-            spawnWall();
+            //spawnWall();
+            spawnWallRPC();
         }
     }
 
@@ -41,22 +48,26 @@ public class Move : MonoBehaviourPun
         if (Input.GetKeyDown(upKey))
         {
             GetComponent<Rigidbody2D>().velocity = Vector2.up * speed;
-            spawnWall();
+            //spawnWall();
+            spawnWallRPC();
         }
         else if (Input.GetKeyDown(downKey))
         {
             GetComponent<Rigidbody2D>().velocity = -Vector2.up * speed;
-            spawnWall();
+            //spawnWall();
+            spawnWallRPC();
         }
         else if (Input.GetKeyDown(rightKey))
         {
             GetComponent<Rigidbody2D>().velocity = Vector2.right * speed;
-            spawnWall();
+            //spawnWall();
+            spawnWallRPC();
         }
         else if (Input.GetKeyDown(leftKey))
         {
             GetComponent<Rigidbody2D>().velocity = -Vector2.right * speed;
-            spawnWall();
+            //spawnWall();
+            spawnWallRPC();
         }
 
         if (wall != null)
@@ -65,7 +76,19 @@ public class Move : MonoBehaviourPun
         }
     }
 
-    void spawnWall()
+    //void spawnWall()
+    //{
+    //    // Save last wall's position
+    //    lastWallEnd = (Vector2)transform.position;
+
+    //    // Spawn a new Lightwall
+    //    GameObject wallObject = PhotonNetwork.Instantiate(wallPrefab.name, transform.position, Quaternion.identity);
+    //    wall = wallObject.GetComponent<Collider2D>();
+
+    //}
+
+    [PunRPC]
+    void spawnWallRPC()
     {
         // Save last wall's position
         lastWallEnd = (Vector2)transform.position;
@@ -96,6 +119,48 @@ public class Move : MonoBehaviourPun
             {
                 Debug.Log("Player lost: " + photonView.Owner.NickName);
                 PhotonNetwork.Destroy(gameObject);
+            }
+        }
+
+        //if (co.CompareTag("Wall") && !co.GetComponent<Wall>().IsOwner(gameObject))
+        //{
+        //    Debug.Log("Player lost: " + photonView.Owner.NickName);
+        //    PhotonNetwork.Destroy(gameObject);
+        //}
+    }
+    
+
+    public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
+    {
+        if (stream.IsWriting)
+        {
+            // If the player owns the wall, send its position and rotation
+            GameObject[] walls = GameObject.FindGameObjectsWithTag("Wall");
+            foreach (GameObject wall in walls)
+            {
+                stream.SendNext(wall.transform.position);
+                stream.SendNext(wall.transform.rotation);
+            }
+        }
+        else
+        {
+            // If the player doesn't own the wall, receive its position and rotation and update them
+            int wallCount = stream.Count / 2; // We send position and rotation, so divide by 2
+            for (int i = 0; i < wallCount; i++)
+            {
+                Vector3 wallPosition = (Vector3)stream.ReceiveNext();
+                Quaternion wallRotation = (Quaternion)stream.ReceiveNext();
+
+                // Find the wall by position (you may want to use a more reliable method to identify the wall)
+                GameObject[] walls = GameObject.FindGameObjectsWithTag("Wall");
+                foreach (GameObject wall in walls)
+                {
+                    if (wall.transform.position == wallPosition)
+                    {
+                        wall.transform.rotation = wallRotation;
+                        break;
+                    }
+                }
             }
         }
     }
