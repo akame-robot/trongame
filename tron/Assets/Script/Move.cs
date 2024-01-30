@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using Photon.Pun;
 
-public class Move : MonoBehaviourPunCallbacks
+public class Move : MonoBehaviourPun
 {
     // Movement keys (customizable in inspector)
     public KeyCode upKey;
@@ -26,13 +26,16 @@ public class Move : MonoBehaviourPunCallbacks
     {
         // Initial Movement Direction
         GetComponent<Rigidbody2D>().velocity = Vector2.up * speed;
-        spawnWall();
+        if (photonView.IsMine)
+        {
+            spawnWall();
+        }
     }
 
     // Update is called once per frame
     void Update()
     {
-        if (!photonView.IsMine) return; // Ensure only the local player handles input
+        if (!photonView.IsMine) return;
 
         // Check for key presses
         if (Input.GetKeyDown(upKey))
@@ -56,17 +59,20 @@ public class Move : MonoBehaviourPunCallbacks
             spawnWall();
         }
 
-        fitColliderBetween(wall, lastWallEnd, transform.position);
+        if (wall != null)
+        {
+            fitColliderBetween(wall, lastWallEnd, (Vector2)transform.position);
+        }
     }
 
     void spawnWall()
     {
         // Save last wall's position
-        lastWallEnd = transform.position;
+        lastWallEnd = (Vector2)transform.position;
 
         // Spawn a new Lightwall
-        GameObject g = PhotonNetwork.Instantiate(wallPrefab.name, transform.position, Quaternion.identity);
-        wall = g.GetComponent<Collider2D>();
+        GameObject wallObject = PhotonNetwork.Instantiate(wallPrefab.name, transform.position, Quaternion.identity);
+        wall = wallObject.GetComponent<Collider2D>();
     }
 
     void fitColliderBetween(Collider2D co, Vector2 a, Vector2 b)
@@ -84,12 +90,13 @@ public class Move : MonoBehaviourPunCallbacks
 
     void OnTriggerEnter2D(Collider2D co)
     {
-        if (!photonView.IsMine) return; // Ensure only the local player handles collisions
-
         if (co != wall)
         {
-            Debug.Log("Player lost:" + name);
-            PhotonNetwork.Destroy(gameObject);
+            if (photonView.IsMine)
+            {
+                Debug.Log("Player lost: " + photonView.Owner.NickName);
+                PhotonNetwork.Destroy(gameObject);
+            }
         }
     }
 }
