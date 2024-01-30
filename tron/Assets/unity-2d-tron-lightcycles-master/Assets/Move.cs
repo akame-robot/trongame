@@ -1,77 +1,110 @@
 ﻿using UnityEngine;
 using System.Collections;
+using Photon.Pun;
+using Photon.Realtime;
 
-public class Move : MonoBehaviour {
-	// Movement keys (customizable in inspector)
-	public KeyCode upKey;
-	public KeyCode downKey;
-	public KeyCode rightKey;
-	public KeyCode leftKey;
+public class Move : MonoBehaviourPunCallbacks
+{
+    // Movement keys (customizable in inspector)
+    public KeyCode upKey;
+    public KeyCode downKey;
+    public KeyCode rightKey;
+    public KeyCode leftKey;
 
-	// Movement Speed
-	public float speed = 16;
+    // Movement Speed
+    public float speed = 16;
 
-	// Wall Prefab
-	public GameObject wallPrefab;
+    // Wall Prefab
+    public GameObject wallPrefab;
 
-	// Current Wall
-	Collider2D wall;
+    // Current Wall
+    Collider2D wall;
 
-	// Last Wall's End
-	Vector2 lastWallEnd;
+    // Last Wall's End
+    Vector2 lastWallEnd;
 
-	// Use this for initialization
-	void Start () {
-		// Initial Movement Direction
-		GetComponent<Rigidbody2D>().velocity = Vector2.up * speed;
-		spawnWall ();
-	}
-	
-	// Update is called once per frame
-	void Update () {
-		// Check for key presses
-		if (Input.GetKeyDown (upKey)) {
-			GetComponent<Rigidbody2D>().velocity = Vector2.up * speed;
-			spawnWall ();
-		} else if (Input.GetKeyDown (downKey)) {
-			GetComponent<Rigidbody2D>().velocity = -Vector2.up * speed;
-			spawnWall ();
-		} else if (Input.GetKeyDown (rightKey)) {
-			GetComponent<Rigidbody2D>().velocity = Vector2.right * speed;
-			spawnWall ();
-		} else if (Input.GetKeyDown (leftKey)) {
-			GetComponent<Rigidbody2D>().velocity = -Vector2.right * speed;
-			spawnWall ();
-		}
+    // PhotonView component
+    private PhotonView photonView;
 
-		fitColliderBetween (wall, lastWallEnd, transform.position);
-	}
+    // Use this for initialization
+    void Start()
+    {
+        photonView = GetComponent<PhotonView>();
 
-	void spawnWall() {
-		// Save last wall's position
-		lastWallEnd = transform.position;
+        // Initial Movement Direction
+        if (photonView.IsMine)
+        {
+            GetComponent<Rigidbody2D>().velocity = Vector2.up * speed;
+            spawnWall();
+        }
+    }
 
-		// Spawn a new Lightwall
-		GameObject g = (GameObject)Instantiate (wallPrefab, transform.position, Quaternion.identity);
-		wall = g.GetComponent<Collider2D>();
-	}
+    // Update is called once per frame
+    void Update()
+    {
+        if (photonView.IsMine)
+        {
+            // Check for key presses
+            if (Input.GetKeyDown(upKey))
+            {
+                GetComponent<Rigidbody2D>().velocity = Vector2.up * speed;
+                spawnWall();
+            }
+            else if (Input.GetKeyDown(downKey))
+            {
+                GetComponent<Rigidbody2D>().velocity = -Vector2.up * speed;
+                spawnWall();
+            }
+            else if (Input.GetKeyDown(rightKey))
+            {
+                GetComponent<Rigidbody2D>().velocity = Vector2.right * speed;
+                spawnWall();
+            }
+            else if (Input.GetKeyDown(leftKey))
+            {
+                GetComponent<Rigidbody2D>().velocity = -Vector2.right * speed;
+                spawnWall();
+            }
 
-	void fitColliderBetween(Collider2D co, Vector2 a, Vector2 b) {
-		// Calculate the Center Position
-		co.transform.position = a + (b - a) * 0.5f;
+            fitColliderBetween(wall, lastWallEnd, transform.position);
+        }
+    }
 
-		// Scale it (horizontally or vertically)
-		float dist = Vector2.Distance (a, b);
-		if (a.x != b.x)
-			co.transform.localScale = new Vector2 (dist + 1, 1);
-		else
-			co.transform.localScale = new Vector2 (1, dist + 1);
-	}
+    void spawnWall()
+    {
+        if (photonView.IsMine)
+        {
+            // Save last wall's position
+            lastWallEnd = transform.position;
 
-	void OnTriggerEnter2D(Collider2D co) {
-		if (co != wall) {
-			print ("Player lost:" + name);
-			Destroy (gameObject);
-		}
-	}
+            // Spawn a new Lightwall
+            GameObject g = PhotonNetwork.Instantiate(wallPrefab.name, transform.position, Quaternion.identity);
+            wall = g.GetComponent<Collider2D>();
+        }
+    }
+
+    void fitColliderBetween(Collider2D co, Vector2 a, Vector2 b)
+    {
+        if (photonView.IsMine)
+        {
+            // Calculate the Center Position
+            co.transform.position = a + (b - a) * 0.5f;
+
+            // Scale it (horizontally or vertically)
+            float dist = Vector2.Distance(a, b);
+            if (a.x != b.x)
+                co.transform.localScale = new Vector2(dist + 1, 1);
+            else
+                co.transform.localScale = new Vector2(1, dist + 1);
+        }
+    }
+
+    void OnTriggerEnter2D(Collider2D co)
+    {
+        if (photonView.IsMine && co != wall)
+        {
+            print("Player lost:" + name);
+            PhotonNetwork.Destroy(gameObject);
+        }
+    }
 }

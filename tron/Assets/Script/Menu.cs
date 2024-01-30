@@ -5,52 +5,117 @@ using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
-using Photon.Pun;
-using Photon.Realtime;
 using TMPro;
+using UnityEditor;
 
 public class Menu : MonoBehaviourPunCallbacks
 {
-    public GameObject canvas, canvas2;
-    public InputField playerName, roomLobbyName, enterLobby;
+    public GameObject canvas, canvas2, playerPrefab;
+    public InputField playerName, enterLobby;
 
-    public TextMeshProUGUI palyerCount;
+    public Button buttomOff, buttomCreateLobby, buttomEnterLObby;
+
+    public GameObject playerPrefabBlue; // Prefab do jogador azul
+    public GameObject playerPrefabPink;
 
     //PhotonView photon e utilizado para saber que objeto e do meu pc usando photon.ismine  photonetcwork.localplayer.actornumber int number = photonetcwork.localplayer.actornumber
 
     void Start()
     {
-        string randomName = "player" + Random.Range(0, 1000);
-    }
+        // Adiciona listeners aos botões
+        buttomOff.onClick.AddListener(Playgame);
+        buttomCreateLobby.onClick.AddListener(CreateLobby);
+        buttomEnterLObby.onClick.AddListener(EnterLobby);
 
-    public void Playgame()
-    {
-        if (playerName != null)
+
+        void Playgame()
         {
-            canvas.SetActive(false);
-            canvas2.SetActive(true);
-
-            Login();
+            // Verifica se o nome do jogador foi inserido
+            if (playerName != null)
+            {
+                string name = playerName.text;
+                PhotonNetwork.NickName = name;
+                PhotonNetwork.ConnectUsingSettings();
+                PhotonNetwork.ConnectToRegion("sa");
+            }
+            else
+            {
+                Debug.Log("Por favor, insira um nome de jogador.");
+            }
         }
-        
-    }
-    public void Login()
-    {
-        string name = playerName.text;
-        PhotonNetwork.ConnectUsingSettings();
-        PhotonNetwork.ConnectToRegion("sa");
-        PhotonNetwork.NickName = name;
     }
 
+    public override void OnConnectedToMaster()
+    {
+        Debug.Log("Conectado ao servidor mestre.");
+        canvas.SetActive(false); // Esconde o canvas de login após a conexão
+        canvas2.SetActive(true); // Mostra o canvas do lobby
+    }
     public override void OnConnected() //ele entra aqui na segunda faze
     {
         Debug.Log("connected");
         Debug.Log($"servidor:{PhotonNetwork.CloudRegion} ping {PhotonNetwork.GetPing()}");
     }
-    public override void OnConnectedToMaster() // depois ele entr aaqui na terceira fase e aqui ele busca um apartida o botao vai connetebutommatch tentra fazer entrar no lobby
+
+    public void CreateLobby()
     {
-        Debug.Log("master entrou");
-        ConnectButtomMatch();
+        // Verifica se o nome do lobby foi inserido
+        if (!string.IsNullOrEmpty(enterLobby.text))
+        {
+            string lobbyName = enterLobby.text;
+            PhotonNetwork.CreateRoom(lobbyName, new RoomOptions { MaxPlayers = 4 });
+            canvas.SetActive(false);
+        }
+        else
+        {
+            Debug.Log("Por favor, insira um nome para o lobby.");
+        }
+    }
+
+    public void EnterLobby()
+    {
+        PhotonNetwork.JoinRandomRoom();
+        canvas2.SetActive(false);
+    }
+
+    public override void OnJoinedLobby()
+    {
+        Debug.Log("Entrou no lobby.");
+    }
+
+    public override void OnJoinedRoom()
+    {
+        Debug.Log("Entrou na sala.");
+        Debug.Log($"Nome da sala: {PhotonNetwork.CurrentRoom.Name}, número de jogadores: {PhotonNetwork.CurrentRoom.PlayerCount}");
+        canvas2.SetActive(false);
+        if (PhotonNetwork.IsConnectedAndReady)
+        {
+            // Se já houver dois jogadores na sala, não instanciar mais jogadores
+            if (PhotonNetwork.CurrentRoom.PlayerCount > 2)
+            {
+                Debug.LogWarning("Sala cheia. Não é possível instanciar mais jogadores.");
+                return;
+            }
+
+            // Calcula a posição de instância do jogador com base no número de jogadores na sala
+            Vector3 spawnPosition = new Vector3(2f * PhotonNetwork.CurrentRoom.PlayerCount, 0f, 0f);
+
+            // Prefab do jogador a ser instanciado
+            GameObject playerPrefabToInstantiate = null;
+
+            // Define o prefab do jogador de acordo com o número de jogadores na sala
+            if (PhotonNetwork.CurrentRoom.PlayerCount == 0)
+            {
+                playerPrefabToInstantiate = playerPrefabBlue; // Primeiro jogador: cor azul
+            }
+            else if (PhotonNetwork.CurrentRoom.PlayerCount == 1)
+            {
+                playerPrefabToInstantiate = playerPrefabPink; // Segundo jogador: cor rosa
+            }
+
+            // Instancia um novo jogador na posição calculada
+            PhotonNetwork.Instantiate(playerPrefabToInstantiate.name, spawnPosition, Quaternion.identity);
+        }
     }
 
     public void ConnectButtomMatch() //vem aqui e e tenta conectar no lobby
@@ -65,19 +130,7 @@ public class Menu : MonoBehaviourPunCallbacks
             MaxPlayers = 4
         };
         PhotonNetwork.JoinOrCreateRoom(lobbyName, roomOption, TypedLobby.Default);
-    }
 
-
-    public override void OnJoinedRoom()//e aqui vai entrar na sala criado no onjoinedramdomfailed 
-    {
-        Debug.Log("joined de room");
-        Debug.Log($"room nanme: {PhotonNetwork.CurrentRoom.Name}");
-        Debug.Log($"numero de player: {PhotonNetwork.CurrentRoom.PlayerCount}");
-    }
-
-    public override void OnJoinedLobby()//quando cria uma sala aparece esse debug log aqui
-    {
-        PhotonNetwork.JoinRandomRoom();
     }
 
 }
