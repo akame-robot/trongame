@@ -10,13 +10,15 @@ using UnityEditor;
 
 public class Menu : MonoBehaviourPunCallbacks
 {
-    public GameObject canvas, canvas2, playerPrefab;
+    public GameObject canvas, canvas2;
     public InputField playerName, enterLobby;
 
     public Button buttomOff, buttomCreateLobby, buttomEnterLObby;
 
     public GameObject playerPrefabBlue; // Prefab do jogador azul
     public GameObject playerPrefabPink;
+
+    private bool gameStarted = false;
 
     //PhotonView photon e utilizado para saber que objeto e do meu pc usando photon.ismine  photonetcwork.localplayer.actornumber int number = photonetcwork.localplayer.actornumber
 
@@ -104,18 +106,37 @@ public class Menu : MonoBehaviourPunCallbacks
             GameObject playerPrefabToInstantiate = null;
 
             // Define o prefab do jogador de acordo com o número de jogadores na sala
-            if (PhotonNetwork.CurrentRoom.PlayerCount == 0)
+            if (PhotonNetwork.CurrentRoom.PlayerCount == 1)
             {
                 playerPrefabToInstantiate = playerPrefabBlue; // Primeiro jogador: cor azul
             }
-            else if (PhotonNetwork.CurrentRoom.PlayerCount == 1)
+            else if (PhotonNetwork.CurrentRoom.PlayerCount == 2)
             {
                 playerPrefabToInstantiate = playerPrefabPink; // Segundo jogador: cor rosa
+                //gameStarted = true;
+                //ResumeGame(); // Comece o jogo
             }
 
             // Instancia um novo jogador na posição calculada
-            PhotonNetwork.Instantiate(playerPrefabToInstantiate.name, spawnPosition, Quaternion.identity);
+            if (playerPrefabToInstantiate != null)
+            {
+                PhotonNetwork.Instantiate(playerPrefabToInstantiate.name, spawnPosition, Quaternion.identity);
+            }
+            else
+            {
+                Debug.LogError("Prefab do jogador não atribuído.");
+            }
         }
+    }
+
+    void PauseGame()
+    {
+        Time.timeScale = 0f; // Pausar o tempo do jogo
+    }
+
+    void ResumeGame()
+    {
+        Time.timeScale = 1f; // Retomar o tempo do jogo
     }
 
     public void ConnectButtomMatch() //vem aqui e e tenta conectar no lobby
