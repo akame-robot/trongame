@@ -1,10 +1,12 @@
-ï»¿using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
 using Photon.Pun;
 using Photon.Realtime;
-using System;
 
-public class Move : MonoBehaviourPunCallbacks, IPunObservable
+public class SpwanWall : MonoBehaviourPunCallbacks, IPunObservable
 {
+    public GameObject spawnPoint;
     // Movement keys (customizable in inspector)
     public KeyCode upKey;
     public KeyCode downKey;
@@ -30,11 +32,8 @@ public class Move : MonoBehaviourPunCallbacks, IPunObservable
     // Use this for initialization
     void Start()
     {
-        // Initial Movement Direction
-        GetComponent<Rigidbody2D>().velocity = Vector2.up * speed;
         if (photonView.IsMine)
         {
-            //spawnWall();
             spawnWallRPC();
         }
     }
@@ -44,35 +43,30 @@ public class Move : MonoBehaviourPunCallbacks, IPunObservable
     {
         if (!photonView.IsMine) return;
 
-        // Check for key presses
+        Vector2 moveDirection = Vector2.zero;
+
         if (Input.GetKeyDown(upKey))
         {
-            GetComponent<Rigidbody2D>().velocity = Vector2.up * speed;
-            //spawnWall();
-            spawnWallRPC();
+            moveDirection = Vector2.up;
         }
         else if (Input.GetKeyDown(downKey))
         {
-            GetComponent<Rigidbody2D>().velocity = -Vector2.up * speed;
-            //spawnWall();
-            spawnWallRPC();
+            moveDirection = -Vector2.up;
         }
         else if (Input.GetKeyDown(rightKey))
         {
-            GetComponent<Rigidbody2D>().velocity = Vector2.right * speed;
-            //spawnWall();
-            spawnWallRPC();
+            moveDirection = Vector2.right;
         }
         else if (Input.GetKeyDown(leftKey))
         {
-            GetComponent<Rigidbody2D>().velocity = -Vector2.right * speed;
-            //spawnWall();
-            spawnWallRPC();
+            moveDirection = -Vector2.right;
         }
 
+        // Atualiza a posição e a rotação da parede
         if (wall != null)
         {
-            fitColliderBetween(wall, lastWallEnd, (Vector2)transform.position);
+            wall.transform.position = spawnPoint.transform.position;
+            wall.transform.rotation = Quaternion.FromToRotation(Vector2.up, moveDirection);
         }
     }
 
@@ -88,12 +82,8 @@ public class Move : MonoBehaviourPunCallbacks, IPunObservable
     [PunRPC]
     void spawnWallRPC()
     {
-        // Save last wall's position
-        lastWallEnd = (Vector2)transform.position;
-
-        // Spawn a new Lightwall
-
-        GameObject wallObject = PhotonNetwork.Instantiate(wallPrefab.name, transform.position, Quaternion.identity);
+        Vector3 spawnPosition = spawnPoint.transform.position; // Posição do objeto vazio
+        GameObject wallObject = PhotonNetwork.Instantiate(wallPrefab.name, spawnPosition, Quaternion.identity);
         wall = wallObject.GetComponent<Collider2D>();
     }
 
@@ -111,7 +101,7 @@ public class Move : MonoBehaviourPunCallbacks, IPunObservable
             co.transform.localScale = new Vector2(1, dist + 1);
     }
 
-    
+
     void OnTriggerEnter2D(Collider2D co)
     {
         if (co != wall)
@@ -130,7 +120,7 @@ public class Move : MonoBehaviourPunCallbacks, IPunObservable
         //}
     }
 
-    
+
     public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
     {
         if (stream.IsWriting)

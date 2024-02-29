@@ -406,7 +406,7 @@ RectTransform:
   - {fileID: 2099702829}
   - {fileID: 1974405204}
   m_Father: {fileID: 0}
-  m_RootOrder: 3
+  m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
@@ -1393,7 +1393,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 2
+  m_RootOrder: 5
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1351772651
 GameObject:
@@ -1477,7 +1477,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 4
+  m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1418543622
 GameObject:
@@ -1650,8 +1650,8 @@ MonoBehaviour:
   buttomOff: {fileID: 1141836985}
   buttomCreateLobby: {fileID: 1531233546}
   buttomEnterLObby: {fileID: 1618619079}
-  playerPrefabBlue: {fileID: 4780295328845867105, guid: df1a5ca5c659a794fbcc8a089993d6ac, type: 3}
-  playerPrefabPink: {fileID: 4780295328845867105, guid: 43aa84b219d679641a1eda5738a80e18, type: 3}
+  playerPrefabBlue: {fileID: 1494482216634337486, guid: 50c188c68b5921f4b84e42027bfc3b16, type: 3}
+  playerPrefabPink: {fileID: 380937204520669349, guid: 43aa84b219d679641a1eda5738a80e18, type: 3}
 --- !u!4 &1492085911
 Transform:
   m_ObjectHideFlags: 0
@@ -1665,7 +1665,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 5
+  m_RootOrder: 4
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1531233543
 GameObject:

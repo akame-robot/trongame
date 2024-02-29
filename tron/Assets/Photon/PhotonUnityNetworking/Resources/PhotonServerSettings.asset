@@ -42,6 +42,9 @@ MonoBehaviour:
   - SpawnWall
   - SpawnWallRPC
   - spawnWallRPC
+  - fitColliderBetween
+  - OnPhotonSerializeView
+  - OnTriggerEnter2D
   DisableAutoOpenWizard: 1
   ShowSettings: 1
   DevRegionSetOnce: 1

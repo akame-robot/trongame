@@ -18,8 +18,6 @@ public class Menu : MonoBehaviourPunCallbacks
     public GameObject playerPrefabBlue; // Prefab do jogador azul
     public GameObject playerPrefabPink;
 
-    private bool gameStarted = false;
-
     //PhotonView photon e utilizado para saber que objeto e do meu pc usando photon.ismine  photonetcwork.localplayer.actornumber int number = photonetcwork.localplayer.actornumber
 
     void Start()
