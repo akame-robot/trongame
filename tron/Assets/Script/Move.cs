@@ -1,7 +1,5 @@
 ﻿using UnityEngine;
 using Photon.Pun;
-using Photon.Realtime;
-using System;
 
 public class Move : MonoBehaviourPunCallbacks, IPunObservable
 {
@@ -18,25 +16,16 @@ public class Move : MonoBehaviourPunCallbacks, IPunObservable
     public GameObject wallPrefab;
 
     // Current Wall
-    Collider2D wall;
+    private Collider2D wall;
 
     // Last Wall's End
-    Vector2 lastWallEnd;
-
-    private GameObject localWall;
-    private GameObject createdWall;
-
+    private Vector2 lastWallEnd;
 
     // Use this for initialization
     void Start()
     {
         // Initial Movement Direction
         GetComponent<Rigidbody2D>().velocity = Vector2.up * speed;
-        if (photonView.IsMine)
-        {
-            //spawnWall();
-            spawnWallRPC();
-        }
     }
 
     // Update is called once per frame
@@ -76,14 +65,20 @@ public class Move : MonoBehaviourPunCallbacks, IPunObservable
         }
     }
 
-    //[PunRPC]
-    //void spawnWallRPC()
-    //{
-    //    lastWallEnd = (Vector2)transform.position;
-    //    GameObject wallObject = PhotonNetwork.Instantiate(wallPrefab.name, transform.position, Quaternion.identity);
-    //    Collider2D wallCollider = wallObject.GetComponent<Collider2D>();
-    //    fitColliderBetween(wallCollider, lastWallEnd, (Vector2)transform.position);
-    //}
+    void MovePlayer(Vector2 direction)
+    {
+        GetComponent<Rigidbody2D>().velocity = direction * speed;
+
+        // Spawn a wall if the movement is valid
+        if (wall != null)
+        {
+            fitColliderBetween(wall, lastWallEnd, (Vector2)transform.position);
+        }
+        else
+        {
+            spawnWallRPC();
+        }
+    }
 
     [PunRPC]
     void spawnWallRPC()
@@ -91,12 +86,13 @@ public class Move : MonoBehaviourPunCallbacks, IPunObservable
         // Save last wall's position
         lastWallEnd = (Vector2)transform.position;
 
-        // Spawn a new Lightwall
-
-        GameObject wallObject = PhotonNetwork.Instantiate(wallPrefab.name, transform.position, Quaternion.identity);
-        wall = wallObject.GetComponent<Collider2D>();
+        // Spawn a new wall only if this is the local player
+        if (photonView.IsMine)
+        {
+            GameObject wallObject = PhotonNetwork.Instantiate(wallPrefab.name, transform.position, Quaternion.identity);
+            wall = wallObject.GetComponent<Collider2D>();
+        }
     }
-
 
     void fitColliderBetween(Collider2D co, Vector2 a, Vector2 b)
     {
@@ -111,7 +107,6 @@ public class Move : MonoBehaviourPunCallbacks, IPunObservable
             co.transform.localScale = new Vector2(1, dist + 1);
     }
 
-    
     void OnTriggerEnter2D(Collider2D co)
     {
         if (co != wall)
@@ -122,15 +117,8 @@ public class Move : MonoBehaviourPunCallbacks, IPunObservable
                 PhotonNetwork.Destroy(gameObject);
             }
         }
-
-        //if (co.CompareTag("Wall") && !co.GetComponent<Wall>().IsOwner(gameObject))
-        //{
-        //    Debug.Log("Player lost: " + photonView.Owner.NickName);
-        //    PhotonNetwork.Destroy(gameObject);
-        //}
     }
 
-    
     public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
     {
         if (stream.IsWriting)
