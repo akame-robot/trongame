@@ -45,6 +45,7 @@ MonoBehaviour:
   - fitColliderBetween
   - OnPhotonSerializeView
   - OnTriggerEnter2D
+  - UpdatePositions
   DisableAutoOpenWizard: 1
   ShowSettings: 1
   DevRegionSetOnce: 1

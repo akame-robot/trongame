@@ -1,165 +1,121 @@
 ﻿using UnityEngine;
 using Photon.Pun;
+using System.Collections.Generic;
 
 public class Move : MonoBehaviourPunCallbacks, IPunObservable
 {
-    // Movement keys (customizable in inspector)
     public KeyCode upKey;
     public KeyCode downKey;
     public KeyCode rightKey;
     public KeyCode leftKey;
-
-    // Movement Speed
     public float speed = 16;
-
-    // Wall Prefab
     public GameObject wallPrefab;
+    private List<GameObject> wallList = new List<GameObject>();
+    private Vector2 moveDirection;
+    private float timeBetweenWalls = 0.1f;
+    private float timeSinceLastWall = 0f;
+    private List<Vector3> wallPositions = new List<Vector3>();
 
-    // Current Wall
-    private Collider2D wall;
-
-    // Last Wall's End
-    private Vector2 lastWallEnd;
-
-    // Use this for initialization
     void Start()
     {
-        // Initial Movement Direction
-        GetComponent<Rigidbody2D>().velocity = Vector2.up * speed;
+        if (photonView.IsMine)
+        {
+            moveDirection = Vector2.up;
+            GetComponent<Rigidbody2D>().velocity = moveDirection * speed;
+        }
     }
 
-    // Update is called once per frame
-    void Update()
+    private void Update()
     {
         if (!photonView.IsMine) return;
 
-        // Check for key presses
-        if (Input.GetKeyDown(upKey))
-        {
-            GetComponent<Rigidbody2D>().velocity = Vector2.up * speed;
-            //spawnWall();
-            spawnWallRPC();
-        }
-        else if (Input.GetKeyDown(downKey))
-        {
-            GetComponent<Rigidbody2D>().velocity = -Vector2.up * speed;
-            //spawnWall();
-            spawnWallRPC();
-        }
-        else if (Input.GetKeyDown(rightKey))
-        {
-            GetComponent<Rigidbody2D>().velocity = Vector2.right * speed;
-            //spawnWall();
-            spawnWallRPC();
-        }
-        else if (Input.GetKeyDown(leftKey))
-        {
-            GetComponent<Rigidbody2D>().velocity = -Vector2.right * speed;
-            //spawnWall();
-            spawnWallRPC();
-        }
+        // Move o jogador
+        HandleMovement();
 
-        if (wall != null)
+        // Verifica se é hora de criar uma nova parede
+        timeSinceLastWall += Time.deltaTime;
+        if (timeSinceLastWall >= timeBetweenWalls)
         {
-            fitColliderBetween(wall, lastWallEnd, (Vector2)transform.position);
+            CreateWall();
+            timeSinceLastWall = 0f;
         }
+        
     }
 
-    void MovePlayer(Vector2 direction)
+    private void HandleMovement()
     {
-        GetComponent<Rigidbody2D>().velocity = direction * speed;
+        if (Input.GetKeyDown(upKey) && moveDirection != -Vector2.up)
+            moveDirection = Vector2.up;
+        else if (Input.GetKeyDown(downKey) && moveDirection != Vector2.up)
+            moveDirection = -Vector2.up;
+        else if (Input.GetKeyDown(rightKey) && moveDirection != -Vector2.right)
+            moveDirection = Vector2.right;
+        else if (Input.GetKeyDown(leftKey) && moveDirection != Vector2.right)
+            moveDirection = -Vector2.right;
 
-        // Spawn a wall if the movement is valid
-        if (wall != null)
-        {
-            fitColliderBetween(wall, lastWallEnd, (Vector2)transform.position);
-        }
-        else
-        {
-            spawnWallRPC();
-        }
+        GetComponent<Rigidbody2D>().velocity = moveDirection * speed;
+    }
+
+    private void CreateWall()
+    {
+        // Cria uma parede na posição atual
+        Vector3 wallPosition = transform.position;
+        GameObject wallObject = PhotonNetwork.Instantiate(wallPrefab.name, wallPosition, Quaternion.identity);
+
+        // Destroi a parede após 5 segundos
+        Destroy(wallObject, 5f);
+
+        // RPC para sincronizar a criação da parede com outros clientes
+        photonView.RPC("SpawnWallRPC", RpcTarget.All, wallPosition, moveDirection);
     }
 
     [PunRPC]
-    void spawnWallRPC()
+    void SpawnWallRPC(Vector3 startPosition, Vector2 direction)
     {
-        // Save last wall's position
-        lastWallEnd = (Vector2)transform.position;
-
-        // Spawn a new wall only if this is the local player
-        if (photonView.IsMine)
-        {
-            GameObject wallObject = PhotonNetwork.Instantiate(wallPrefab.name, transform.position, Quaternion.identity);
-            wall = wallObject.GetComponent<Collider2D>();
-        }
+        // Cria uma parede baseada na direção e na posição inicial
+        Vector3 endPosition = startPosition + (Vector3)direction;
+        GameObject wallObject = PhotonNetwork.Instantiate(wallPrefab.name, startPosition, Quaternion.identity);
+        wallObject.GetComponent<Wall>().SetPositions(startPosition, endPosition);
+        wallList.Add(wallObject);
+        Destroy(wallObject, 20f);
     }
 
-    void fitColliderBetween(Collider2D co, Vector2 a, Vector2 b)
-    {
-        // Calculate the Center Position
-        co.transform.position = a + (b - a) * 0.5f;
 
-        // Scale it (horizontally or vertically)
-        float dist = Vector2.Distance(a, b);
-        if (a.x != b.x)
-            co.transform.localScale = new Vector2(dist + 1, 1);
-        else
-            co.transform.localScale = new Vector2(1, dist + 1);
-    }
-
-    void OnTriggerEnter2D(Collider2D co)
-    {
-        if (co != wall)
-        {
-            if (photonView.IsMine)
-            {
-                Debug.Log("Player lost: " + photonView.Owner.NickName);
-                PhotonNetwork.Destroy(gameObject);
-            }
-        }
-    }
 
     public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
     {
         if (stream.IsWriting)
         {
-            // Write wall data
-            Collider2D[] walls = GameObject.FindObjectsOfType<Collider2D>();
-            foreach (Collider2D wallCollider in walls)
+            stream.SendNext(wallList.Count);
+            foreach (var wall in wallList)
             {
-                if (wallCollider.CompareTag("Wall"))
-                {
-                    stream.SendNext(wallCollider.transform.position);
-                    stream.SendNext(wallCollider.transform.rotation);
-                }
+                stream.SendNext(wall.transform.position);
+                stream.SendNext(wall.GetComponent<Wall>().GetEndPosition());
             }
         }
         else
         {
-            // Read wall data and instantiate if necessary
-            int wallCount = stream.Count / 2;
+            int wallCount = (int)stream.ReceiveNext();
             for (int i = 0; i < wallCount; i++)
             {
                 Vector3 wallPosition = (Vector3)stream.ReceiveNext();
-                Quaternion wallRotation = (Quaternion)stream.ReceiveNext();
+                Vector3 wallEndPosition = (Vector3)stream.ReceiveNext();
 
-                // Check if wall already exists
                 bool wallExists = false;
-                Collider2D[] existingWalls = GameObject.FindObjectsOfType<Collider2D>();
-                foreach (Collider2D existingWall in existingWalls)
+                foreach (var wall in wallList)
                 {
-                    if (existingWall.CompareTag("Wall") && existingWall.transform.position == wallPosition)
+                    if (wall.transform.position == wallPosition)
                     {
                         wallExists = true;
                         break;
                     }
                 }
 
-                // Instantiate wall if it doesn't exist
                 if (!wallExists)
                 {
-                    GameObject newWall = Instantiate(wallPrefab, wallPosition, wallRotation);
-                    newWall.tag = "Wall";
+                    GameObject newWall = PhotonNetwork.Instantiate(wallPrefab.name, wallPosition, Quaternion.identity);
+                    newWall.GetComponent<Wall>().SetPositions(wallPosition, wallEndPosition);
+                    wallList.Add(newWall);
                 }
             }
         }

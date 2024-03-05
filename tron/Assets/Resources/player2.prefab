@@ -176,7 +176,7 @@ MonoBehaviour:
   downKey: 274
   rightKey: 275
   leftKey: 276
-  speed: 5
+  speed: 10
   wallPrefab: {fileID: 143510, guid: ccdb2574137c148709e9b49f5640a01d, type: 3}
 --- !u!114 &4933011587929565147
 MonoBehaviour:

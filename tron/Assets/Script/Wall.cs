@@ -1,19 +1,22 @@
 using UnityEngine;
-using Photon.Pun;
 
-public class Wall : MonoBehaviourPunCallbacks
+public class Wall : MonoBehaviour
 {
-    private GameObject owner;
+    private LineRenderer lineRenderer;
 
-    // Set the owner of the wall
-    public void SetOwner(GameObject player)
+    void Awake()
     {
-        owner = player;
+        lineRenderer = GetComponent<LineRenderer>();
     }
 
-    // Check if the wall belongs to the given player
-    public bool IsOwner(GameObject player)
+    public void SetPositions(Vector3 startPosition, Vector3 endPosition)
     {
-        return owner == player;
+        lineRenderer.SetPosition(0, startPosition);
+        lineRenderer.SetPosition(1, endPosition);
+    }
+
+    public Vector3 GetEndPosition()
+    {
+        return lineRenderer.GetPosition(1);
     }
 }
