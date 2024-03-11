@@ -56,6 +56,7 @@ public class Move : MonoBehaviourPunCallbacks, IPunObservable
         GetComponent<Rigidbody2D>().velocity = moveDirection * speed;
     }
 
+    [PunRPC]
     private void CreateWall()
     {
         // Cria uma parede na posição atual
@@ -63,22 +64,22 @@ public class Move : MonoBehaviourPunCallbacks, IPunObservable
         GameObject wallObject = PhotonNetwork.Instantiate(wallPrefab.name, wallPosition, Quaternion.identity);
 
         // Destroi a parede após 5 segundos
-        Destroy(wallObject, 5f);
+        Destroy(wallObject, 20f);
 
         // RPC para sincronizar a criação da parede com outros clientes
         photonView.RPC("SpawnWallRPC", RpcTarget.All, wallPosition, moveDirection);
     }
 
-    [PunRPC]
-    void SpawnWallRPC(Vector3 startPosition, Vector2 direction)
-    {
-        // Cria uma parede baseada na direção e na posição inicial
-        Vector3 endPosition = startPosition + (Vector3)direction;
-        GameObject wallObject = PhotonNetwork.Instantiate(wallPrefab.name, startPosition, Quaternion.identity);
-        wallObject.GetComponent<Wall>().SetPositions(startPosition, endPosition);
-        wallList.Add(wallObject);
-        Destroy(wallObject, 20f);
-    }
+    //[PunRPC]
+    //void SpawnWallRPC(Vector3 startPosition, Vector2 direction)
+    //{
+    //    // Cria uma parede baseada na direção e na posição inicial
+    //    Vector3 endPosition = startPosition + (Vector3)direction;
+    //    GameObject wallObject = PhotonNetwork.Instantiate(wallPrefab.name, startPosition, Quaternion.identity);
+    //    wallObject.GetComponent<Wall>().SetPositions(startPosition, endPosition);
+    //    wallList.Add(wallObject);
+    //    Destroy(wallObject, 20f);
+    //}
 
 
 
